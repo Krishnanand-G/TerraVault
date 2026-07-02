@@ -29,7 +29,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "1.9.8"
+          terraform_version: "1.11.3"
 
       # NOTE: configure cloud auth here before init/plan, e.g.
       #   azure/login@v2 (OIDC) for the azure matrix legs, or
