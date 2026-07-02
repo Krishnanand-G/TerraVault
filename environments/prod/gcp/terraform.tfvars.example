@@ -1,0 +1,22 @@
+project_id = "my-gcp-project-prod"
+region     = "us-central1"
+location   = "US"
+
+prefix       = "terravault-prod"
+bucket_names = ["data"]
+
+storage_class      = "STANDARD"
+versioning_enabled = true
+
+# CMEK is MANDATORY in prod (enforced by variable validation).
+# Provide a KMS key self link per bucket name.
+encryption_key_names = {
+  data = "projects/my-gcp-project-prod/locations/us/keyRings/terravault/cryptoKeys/gcs-cmek"
+}
+
+lifecycle_rules = []
+
+labels = {
+  cost_center = "data-platform"
+  compliance  = "required"
+}

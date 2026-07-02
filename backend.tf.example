@@ -1,0 +1,32 @@
+# Remote state backend examples for TerraVault.
+#
+# Copy the relevant block into a `backend.tf` inside the target environment/cloud root
+# (e.g. environments/prod/azure/backend.tf) and fill in the placeholders. `backend.tf`
+# is git-ignored so real state configuration never lands in version control.
+#
+# Use a DISTINCT state key/prefix per environment + cloud so states never collide.
+
+# ---------------------------------------------------------------------------
+# Azure: azurerm backend (state stored in a blob container).
+# Locking is automatic via blob leases -- no separate lock table needed.
+# ---------------------------------------------------------------------------
+# terraform {
+#   backend "azurerm" {
+#     resource_group_name  = "terravault-tfstate-rg"
+#     storage_account_name = "terravaulttfstate"      # globally unique
+#     container_name       = "tfstate"
+#     key                  = "prod/azure/terraform.tfstate"
+#     use_azuread_auth     = true
+#   }
+# }
+
+# ---------------------------------------------------------------------------
+# GCP: gcs backend (state stored in a GCS bucket).
+# GCS backend uses native object generation-based locking automatically.
+# ---------------------------------------------------------------------------
+# terraform {
+#   backend "gcs" {
+#     bucket = "terravault-tfstate"                    # globally unique, versioning enabled
+#     prefix = "prod/gcp"
+#   }
+# }

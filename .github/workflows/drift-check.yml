@@ -1,0 +1,60 @@
+name: drift-check
+
+on:
+  schedule:
+    # Daily at 06:00 UTC.
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  drift:
+    name: ${{ matrix.environment }} / ${{ matrix.cloud }} drift
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [dev, staging, prod]
+        cloud: [azure, gcp]
+    defaults:
+      run:
+        working-directory: environments/${{ matrix.environment }}/${{ matrix.cloud }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+
+      # NOTE: configure cloud auth here before init/plan, e.g.
+      #   azure/login@v2 (OIDC) for the azure matrix legs, or
+      #   google-github-actions/auth@v2 (Workload Identity Federation) for gcp.
+      # A real backend.tf must also be present per environment (see backend.tf.example).
+
+      - name: Terraform init
+        run: terraform init
+
+      - name: Terraform plan (detailed exit code)
+        id: plan
+        run: |
+          set +e
+          terraform plan -input=false -lock=false -detailed-exitcode
+          code=$?
+          echo "exitcode=$code" >> "$GITHUB_OUTPUT"
+          # 0 = no changes, 2 = drift detected, 1 = error.
+          if [ "$code" -eq 1 ]; then
+            echo "::error::terraform plan failed for ${{ matrix.environment }}/${{ matrix.cloud }}"
+            exit 1
+          fi
+          exit 0
+
+      - name: Report drift
+        if: steps.plan.outputs.exitcode == '2'
+        run: |
+          echo "::error::Drift detected in ${{ matrix.environment }}/${{ matrix.cloud }} (plan exit code 2)"
+          exit 1

@@ -1,0 +1,20 @@
+project_id = "my-gcp-project-staging"
+region     = "us-central1"
+location   = "US"
+
+prefix       = "terravault-staging"
+bucket_names = ["data"]
+
+storage_class      = "STANDARD"
+versioning_enabled = true
+
+# CMEK recommended in staging to validate the prod key path. Uncomment and fill in.
+# encryption_key_names = {
+#   data = "projects/my-gcp-project-staging/locations/us/keyRings/terravault/cryptoKeys/gcs-cmek"
+# }
+
+lifecycle_rules = []
+
+labels = {
+  cost_center = "data-platform"
+}

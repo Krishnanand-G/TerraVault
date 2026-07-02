@@ -1,0 +1,20 @@
+project_id = "my-gcp-project-dev"
+region     = "us-central1"
+location   = "US"
+
+prefix       = "terravault-dev"
+bucket_names = ["data"]
+
+storage_class      = "STANDARD"
+versioning_enabled = true
+
+# CMEK optional in dev -- left as Google-managed keys by default.
+# encryption_key_names = {
+#   data = "projects/my-gcp-project-dev/locations/us/keyRings/terravault/cryptoKeys/gcs-cmek"
+# }
+
+lifecycle_rules = []
+
+labels = {
+  cost_center = "data-platform"
+}
