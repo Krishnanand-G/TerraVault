@@ -4,9 +4,9 @@ Infrastructure-as-Code data platform for provisioning object storage across **Az
 
 TerraVault ships **thin wrapper modules** around battle-tested upstream modules rather than reinventing them:
 
-| Cloud | Upstream module | Version |
-| ----- | --------------- | ------- |
-| Azure | [`Azure/avm-res-storage-storageaccount/azurerm`](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm/latest) (Azure Verified Module) | `~> 0.7` |
+| Cloud | Implementation | Notes |
+| ----- | -------------- | ----- |
+| Azure | Native `azurerm` resources in `modules/azure_storage` | Input patterns inspired by [Azure AVM storage](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm/latest) |
 | GCP   | [`terraform-google-modules/cloud-storage/google`](https://registry.terraform.io/modules/terraform-google-modules/cloud-storage/google/latest) | `~> 12.3` |
 
 Our modules expose a small, opinionated surface (versioning, lifecycle rules, customer-managed encryption keys) and delegate the heavy lifting to the upstream modules. We do **not** vendor or copy the upstream repositories.
@@ -16,7 +16,7 @@ Our modules expose a small, opinionated surface (versioning, lifecycle rules, cu
 ```
 .
 ├── modules/
-│   ├── azure_storage/          # thin wrapper over the Azure AVM storage account module
+│   ├── azure_storage/          # azurerm storage account + lifecycle policy module
 │   │   ├── main.tf
 │   │   ├── variables.tf
 │   │   ├── outputs.tf
