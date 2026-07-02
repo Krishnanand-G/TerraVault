@@ -49,8 +49,8 @@ variable "encryption_key_names" {
     Map of bucket name => Cloud KMS key self link used for customer-managed encryption (CMEK).
     Leave empty to use Google-managed encryption keys.
   EOT
-  type    = map(string)
-  default = {}
+  type        = map(string)
+  default     = {}
 }
 
 variable "force_destroy" {
