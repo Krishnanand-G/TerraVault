@@ -1,27 +1,25 @@
 # TerraVault
 
-Infrastructure-as-Code data platform for provisioning object storage across **Azure** and **Google Cloud**, with multi-environment promotion, CI-driven `plan` gating, and scheduled drift detection.
+Terraform for object storage on Azure and Google Cloud. Each environment gets its own root module and state. CI runs `fmt` and `validate` on every push; a nightly job flags drift.
 
-TerraVault ships **thin wrapper modules** around battle-tested upstream modules rather than reinventing them:
+The modules here are thin wrappers. They pin upstream versions, map our variable names, and set defaults. We are not vendoring or copying upstream repos.
 
 | Cloud | Implementation | Notes |
 | ----- | -------------- | ----- |
-| Azure | Native `azurerm` resources in `modules/azure_storage` | Input patterns inspired by [Azure AVM storage](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm/latest) |
+| Azure | Native `azurerm` in `modules/azure_storage` | Inputs follow patterns from [Azure AVM storage](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm/latest) |
 | GCP   | [`terraform-google-modules/cloud-storage/google`](https://registry.terraform.io/modules/terraform-google-modules/cloud-storage/google/latest) | `~> 12.3` |
 
-Our modules expose a small, opinionated surface (versioning, lifecycle rules, customer-managed encryption keys) and delegate the heavy lifting to the upstream modules. We do **not** vendor or copy the upstream repositories.
-
-## Repository layout
+## Layout
 
 ```
 .
 ├── modules/
-│   ├── azure_storage/          # azurerm storage account + lifecycle policy module
+│   ├── azure_storage/          # storage account + lifecycle policy
 │   │   ├── main.tf
 │   │   ├── variables.tf
 │   │   ├── outputs.tf
 │   │   └── versions.tf
-│   └── gcs_storage/            # thin wrapper over the Google cloud-storage module
+│   └── gcs_storage/            # wrapper over Google's cloud-storage module
 │       ├── main.tf
 │       ├── variables.tf
 │       ├── outputs.tf
@@ -34,29 +32,29 @@ Our modules expose a small, opinionated surface (versioning, lifecycle rules, cu
 │   │   ├── azure/
 │   │   └── gcp/
 │   └── prod/
-│       ├── azure/              # CMK enforced
-│       └── gcp/                # CMK enforced
-├── backend.tf.example          # remote state + locking snippets for azurerm & gcs
+│       ├── azure/              # CMK on
+│       └── gcp/                # CMK on
+├── backend.tf.example          # remote state snippets for azurerm & gcs
 └── .github/workflows/
     ├── terraform-plan.yml      # fmt / validate / init (matrix: env x cloud)
-    └── drift-check.yml         # scheduled `plan -detailed-exitcode`
+    └── drift-check.yml         # scheduled plan -detailed-exitcode
 ```
 
 ## Environments
 
-Each environment/cloud pair is an independent Terraform root module. This isolates state, permits per-environment providers/backends, and lets changes be promoted `dev → staging → prod`.
+Each `environments/<env>/<cloud>` folder is a separate Terraform root. State stays isolated, and you can promote changes dev → staging → prod without sharing backends.
 
 | Environment | Azure | GCP | Notes |
 | ----------- | ----- | --- | ----- |
-| `dev`       | ✅    | ✅  | Relaxed: CMK optional, short retention. |
-| `staging`   | ✅    | ✅  | Mirrors prod topology for pre-release validation. |
-| `prod`      | ✅    | ✅  | **Customer-managed keys enabled**, versioning on, longer retention. |
+| `dev`       | ✅    | ✅  | CMK optional, short retention |
+| `staging`   | ✅    | ✅  | Same shape as prod, for pre-release checks |
+| `prod`      | ✅    | ✅  | Customer-managed keys, versioning, longer retention |
 
 ## Getting started
 
-1. Copy the backend snippet you need from [`backend.tf.example`](./backend.tf.example) into a `backend.tf` in the target environment directory, and fill in your state storage details.
-2. Copy the matching `terraform.tfvars.example` to `terraform.tfvars` and fill in real values (never commit `terraform.tfvars`).
-3. Authenticate to your cloud (`az login` / `gcloud auth application-default login`).
+1. Copy the backend block you need from [`backend.tf.example`](./backend.tf.example) into `backend.tf` under the target environment, then fill in your state bucket details.
+2. Copy `terraform.tfvars.example` to `terraform.tfvars` and set real values. Do not commit `terraform.tfvars`.
+3. Log in to your cloud (`az login` or `gcloud auth application-default login`).
 4. Run Terraform:
 
 ```bash
@@ -66,13 +64,14 @@ terraform plan
 terraform apply
 ```
 
-## CI / CD
+## CI
 
-- **`terraform-plan.yml`** — runs on every push/PR. A matrix across `{dev, staging, prod} x {azure, gcp}` runs `terraform fmt -check`, `terraform init -backend=false`, and `terraform validate`. Backend init is disabled so validation needs no cloud credentials.
-- **`drift-check.yml`** — runs on a schedule (daily cron). Executes `terraform plan -detailed-exitcode` against each environment and fails the job when drift is detected (exit code `2`).
+**terraform-plan.yml** runs on push and PR. A matrix over `{dev, staging, prod} x {azure, gcp}` runs `terraform fmt -check`, `terraform init -backend=false`, and `terraform validate`. Backend init is off so you do not need cloud creds in CI.
+
+**drift-check.yml** runs on a daily cron. It runs `terraform plan -detailed-exitcode` per environment and fails when drift shows up (exit code `2`).
 
 ## Conventions
 
-- Modules are **thin wrappers**: they pin the upstream version, translate our variable names, and set safe defaults. Business/topology decisions live in the `environments/` roots.
-- State is remote and locked (Azure blob lease locking / GCS + native locking). See `backend.tf.example`.
-- Secrets and real `*.tfvars` are git-ignored. Only `*.tfvars.example` files are committed.
+- Wrappers pin versions and translate variables. Topology choices live in `environments/`.
+- Remote state with locking (Azure blob lease / GCS). See `backend.tf.example`.
+- Real `*.tfvars` and secrets stay out of git. Only `*.tfvars.example` is committed.
