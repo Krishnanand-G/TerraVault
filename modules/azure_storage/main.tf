@@ -47,8 +47,8 @@ resource "azurerm_storage_management_policy" "this" {
           dynamic "base_blob" {
             for_each = try([actions.value.base_blob], [])
             content {
-              tier_to_cool_after_days_since_modification_greater_than    = try(base_blob.value.tier_to_cool_after_days_since_modification_greater_than, null)
-              delete_after_days_since_modification_greater_than        = try(base_blob.value.delete_after_days_since_modification_greater_than, null)
+              tier_to_cool_after_days_since_modification_greater_than = try(base_blob.value.tier_to_cool_after_days_since_modification_greater_than, null)
+              delete_after_days_since_modification_greater_than       = try(base_blob.value.delete_after_days_since_modification_greater_than, null)
             }
           }
         }
